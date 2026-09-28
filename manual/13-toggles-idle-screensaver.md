@@ -95,6 +95,8 @@ You can start it on demand from _System > Screensaver_ (`Super + Esc`), which fo
 
 The logo it draws is yours to change, under _Style > Screensaver_. Upload a png or svg and Omarchy converts it to ASCII. See [branding](41-branding.md).
 
+You can add your own effects to the rotation, too. Put an executable in `~/.config/omarchy/screensaver/effects/` and it comes up as often as any one of the built-in effects. It runs in the screensaver's terminal with the path to the logo as its only argument, can draw whatever it likes, and should exit when it's done so the next effect can start. Keys still go to the screensaver, and the effect is stopped along with it. If your effect is a wrapper script, `exec` the real program, so stopping the effect stops the program too.
+
 ### The lock screen
 
 `Super + Ctrl + L` locks the machine. That runs the lock screen from the Omarchy shell, blanks the display, resets your keyboard layout to the first one so you're not typing your password in the wrong alphabet, and — if you have it running — locks 1Password on the way out.

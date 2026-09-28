@@ -8,6 +8,7 @@ screensaver_in_focus() {
 
 exit_screensaver() {
   hyprctl eval 'hl.config({ cursor = { invisible = false } })' &>/dev/null || hyprctl keyword cursor:invisible false &>/dev/null || true
+  [[ -n $effect ]] && kill "$effect" 2>/dev/null
   pkill -x ttfx 2>/dev/null
   pkill -f '[o]rg.omarchy.screensaver' 2>/dev/null
   exit 0
@@ -19,8 +20,6 @@ trap exit_screensaver SIGINT SIGTERM SIGHUP SIGQUIT
 printf '\033]11;rgb:00/00/00\007'  # Set background color to black
 
 hyprctl eval 'hl.config({ cursor = { invisible = true } })' &>/dev/null || hyprctl keyword cursor:invisible true &>/dev/null
-
-tty=$(tty 2>/dev/null)
 
 # Terminals allocate the pty at the default 80x24 and only resize it once the
 # compositor has told the window how big it is. ttfx measures the terminal once,
@@ -35,12 +34,33 @@ wait_for_terminal_resize() {
 
 wait_for_terminal_resize
 
-while true; do
-  ttfx -i ~/.config/omarchy/branding/screensaver.txt \
-    --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas --anchor-canvas c --anchor-text c\
-    --random-effect --no-eol --no-restore-cursor &
+logo=~/.config/omarchy/branding/screensaver.txt
 
-  while pgrep -t "${tty#/dev/}" -x ttfx >/dev/null; do
+# Executables in ~/.config/omarchy/screensaver/effects join the rotation, each as
+# likely to come up as any one of the built-in effects. They run in this terminal
+# with the logo as their only argument, and exit when they're done.
+custom_effects=()
+for custom in ~/.config/omarchy/screensaver/effects/*; do
+  [[ -f $custom && -x $custom && $custom != *.sample ]] && custom_effects+=("$custom")
+done
+builtin_effects=$(ttfx --help | awk '/^Commands:/ { listing = 1; next } /^$/ { listing = 0 } listing && $1 != "help" { count++ } END { print count + 0 }')
+((builtin_effects > 0)) || builtin_effects=1
+
+while true; do
+  # Without custom effects there's nothing to draw: ttfx picks, as it always has.
+  pick=$builtin_effects
+  ((${#custom_effects[@]})) && pick=$(shuf -i "0-$((builtin_effects + ${#custom_effects[@]} - 1))" -n 1)
+
+  if ((pick < ${#custom_effects[@]})); then
+    "${custom_effects[pick]}" "$logo" &
+  else
+    ttfx -i "$logo" \
+      --frame-rate 120 --canvas-width 0 --canvas-height 0 --reuse-canvas --anchor-canvas c --anchor-text c\
+      --random-effect --no-eol --no-restore-cursor &
+  fi
+  effect=$!
+
+  while kill -0 "$effect" 2>/dev/null; do
     if read -n1 -t 1 || ! screensaver_in_focus; then
       exit_screensaver
     fi

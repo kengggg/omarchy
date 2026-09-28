@@ -78,6 +78,7 @@ overwritten on the next `omarchy update`.
 - `~/.config/` - User configuration (safe to edit)
 - `~/.config/omarchy/themes/<custom-name>/` - Custom themes
 - `~/.config/omarchy/hooks/` - Custom automation hooks
+- `~/.config/omarchy/screensaver/effects/` - Extra screensaver effects (executables that join the rotation)
 
 If the request is to develop Omarchy itself, this skill is out of scope. Follow repository development instructions instead of this skill.
 
